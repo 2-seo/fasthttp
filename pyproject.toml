@@ -1,9 +1,9 @@
 [project]
 name = "fasthttp"
 version = "0.1.0"
-description = "Add your description here"
+description = "A fast and elegant HTTP client library with decorator-based request handling built on aiohttp"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "aiohttp>=3.12.7",
-]
+] 
