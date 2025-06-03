@@ -1,0 +1,94 @@
+# FastHTTP 프로젝트 라벨 시스템
+
+## 이슈 타입
+- name: "🐛 bug"
+  color: "d73a4a"
+  description: "버그나 오류"
+  
+- name: "✨ feature"
+  color: "0075ca"
+  description: "새로운 기능"
+  
+- name: "⚡ enhancement"
+  color: "a2eeef"
+  description: "기존 기능 개선"
+  
+- name: "📝 documentation"
+  color: "0052cc"
+  description: "문서 관련"
+  
+- name: "♻️ refactor"
+  color: "fbca04"
+  description: "코드 리팩토링"
+  
+- name: "🚀 performance"
+  color: "ff9500"
+  description: "성능 개선"
+  
+- name: "🔒 security"
+  color: "ee0701"
+  description: "보안 관련"
+
+## 우선순위
+- name: "🔥 priority: high"
+  color: "b60205"
+  description: "높은 우선순위"
+  
+- name: "📈 priority: medium"
+  color: "fbca04"
+  description: "중간 우선순위"
+  
+- name: "📉 priority: low"
+  color: "0e8a16"
+  description: "낮은 우선순위"
+
+## 컴포넌트
+- name: "🏗️ core"
+  color: "5319e7"
+  description: "핵심 라이브러리"
+  
+- name: "🧪 testing"
+  color: "bfdadc"
+  description: "테스트 관련"
+  
+- name: "⚙️ ci/cd"
+  color: "1d76db"
+  description: "CI/CD 관련"
+  
+- name: "📦 dependencies"
+  color: "0366d6"
+  description: "의존성 관련"
+
+## 상태
+- name: "🙋 help wanted"
+  color: "008672"
+  description: "도움 요청"
+  
+- name: "👶 good first issue"
+  color: "7057ff"
+  description: "첫 기여에 좋음"
+  
+- name: "❌ wontfix"
+  color: "ffffff"
+  description: "수정하지 않음"
+  
+- name: "🔄 duplicate"
+  color: "cfd3d7"
+  description: "중복 이슈"
+  
+- name: "❗ invalid"
+  color: "e4e669"
+  description: "유효하지 않음"
+  
+- name: "❓ question"
+  color: "cc317c"
+  description: "질문"
+
+## 특별
+- name: "💥 breaking change"
+  color: "d93f0b"
+  description: "호환성 깨지는 변경"
+  
+- name: "🔬 experimental"
+  color: "ff6347"
+  description: "실험적 기능" 

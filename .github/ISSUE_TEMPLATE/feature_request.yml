@@ -1,0 +1,54 @@
+name: ✨ Feature Request
+description: 새로운 기능을 제안해주세요
+title: "[Feature] "
+labels: ["✨ feature", "⚡ enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        FastHTTP에 새로운 기능을 제안해주셔서 감사합니다! 🚀
+        
+  - type: textarea
+    id: description
+    attributes:
+      label: 📝 기능 설명
+      description: 제안하는 기능에 대해 자세히 설명해주세요
+      placeholder: 이 기능이 무엇인지, 어떻게 동작해야 하는지 설명해주세요
+    validations:
+      required: true
+      
+  - type: textarea
+    id: motivation
+    attributes:
+      label: 🎯 동기 및 필요성
+      description: 왜 이 기능이 필요한지 설명해주세요
+      placeholder: 어떤 문제를 해결하거나 어떤 이점을 제공하나요?
+    validations:
+      required: true
+      
+  - type: textarea
+    id: example
+    attributes:
+      label: 💡 사용 예시
+      description: 제안하는 기능의 사용 예시를 보여주세요
+      placeholder: |
+        ```python
+        # 예시 코드
+        ```
+      render: python
+      
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: 🔄 대안
+      description: 고려해본 다른 방법이나 대안이 있다면 설명해주세요
+      
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: ✅ 체크리스트
+      options:
+        - label: 기존 이슈를 검색해봤습니다
+          required: true
+        - label: 문서를 확인해봤습니다
+          required: true 
