@@ -151,6 +151,40 @@ class FastHTTP:
             url = f"{self.base_url.rstrip('/')}/{url.lstrip('/')}"
         return url.format(**kwargs)
     
+    def _serialize_json(self, json_data: Any) -> Any:
+        """
+        Smart JSON serialization that handles various Python objects.
+        
+        Automatically converts:
+        - Pydantic BaseModel -> dict
+        - Dataclasses -> dict  
+        - Regular classes with __dict__ -> dict
+        - Other objects with .dict() method -> dict
+        - Regular dicts/lists/primitives -> unchanged
+        """
+        if json_data is None:
+            return None
+            
+        # Check for Pydantic BaseModel
+        if hasattr(json_data, 'model_dump'):
+            # Pydantic v2
+            return json_data.model_dump()
+        elif hasattr(json_data, 'dict'):
+            # Pydantic v1 or other objects with .dict() method
+            return json_data.dict()
+        
+        # Check for dataclass
+        elif hasattr(json_data, '__dataclass_fields__'):
+            import dataclasses
+            return dataclasses.asdict(json_data)
+        
+        # Check for regular class with __dict__ attribute
+        elif hasattr(json_data, '__dict__'):
+            return vars(json_data)
+        
+        # Return as-is for regular dicts, lists, primitives
+        return json_data
+    
     def _make_request(self, method: str, **decorator_kwargs) -> Callable[[AsyncCallable], AsyncCallable]:
         """
         Common request logic for all HTTP methods.
@@ -175,7 +209,7 @@ class FastHTTP:
                     request_kwargs = {
                         'params': kwargs.get('params', {}),
                         'data': kwargs.get('data'),
-                        'json': kwargs.get('json'),
+                        'json': self._serialize_json(kwargs.get('json')),
                         'headers': {**self.default_headers, **kwargs.get('headers', {})},
                         'cookies': kwargs.get('cookies'),
                         'auth': kwargs.get('auth', self.auth),
