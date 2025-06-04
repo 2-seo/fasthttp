@@ -11,6 +11,7 @@ from typing import Any, Callable, Dict, Optional, Union, TypeVar, Awaitable
 from functools import wraps
 
 from fasthttp.lifecycle import register_instance
+from fasthttp.serializers import to_dict
 
 # Type variables for better type hints
 # AsyncCallable represents async function types with preserved signatures
@@ -19,11 +20,21 @@ AsyncCallable = TypeVar('AsyncCallable', bound=Callable[..., Awaitable[Any]])
 
 class FastHTTP:
     """
-    A fast and elegant HTTP client with decorator-based request handling.
+    Async HTTP client with decorator-based request handling.
     
-    FastHTTP provides a clean, decorator-based interface for making HTTP requests,
-    built on top of aiohttp for high performance and async support.
+    Built on aiohttp, providing clean decorator syntax for HTTP requests
+    with automatic session management and object serialization.
     
+    Args:
+        base_url: Base URL for all requests
+        timeout: Request timeout (seconds or ClientTimeout)  
+        headers: Default headers
+        connector: Custom aiohttp connector
+        auth: Basic authentication
+        cookies: Default cookies
+        debug: Enable debug logging
+        auto_cleanup: Auto cleanup resources on exit
+        
     Example:
         >>> http = FastHTTP(base_url="https://api.example.com")
         >>> 
@@ -46,26 +57,26 @@ class FastHTTP:
         auto_cleanup: bool = True
     ):
         """
-        Initialize FastHTTP client with optional configuration.
+        Initialize FastHTTP client.
         
         Args:
             base_url: Base URL for all requests
-            timeout: Default timeout for requests (seconds or ClientTimeout object)
+            timeout: Request timeout (seconds or ClientTimeout object)
             headers: Default headers for all requests
-            connector: Custom connector for connection pooling
-            auth: Basic authentication
-            cookies: Default cookies
+            connector: Custom aiohttp connector for advanced configuration
+            auth: Basic authentication credentials
+            cookies: Default cookies for all requests
             debug: Enable debug logging
-            auto_cleanup: Enable automatic resource cleanup on process exit
+            auto_cleanup: Automatically cleanup resources on exit
         """
-        self.base_url = base_url
+        self.base_url = base_url.rstrip('/') if base_url else None
         self.default_headers = headers or {}
         self.default_cookies = cookies or {}
         self.auth = auth
         self.debug = debug
         self._closed = False
         
-        # Setup timeout
+        # Handle timeout parameter - convert int/float to ClientTimeout
         if isinstance(timeout, (int, float)):
             self.timeout = aiohttp.ClientTimeout(total=timeout)
         else:
@@ -151,40 +162,6 @@ class FastHTTP:
             url = f"{self.base_url.rstrip('/')}/{url.lstrip('/')}"
         return url.format(**kwargs)
     
-    def _serialize_json(self, json_data: Any) -> Any:
-        """
-        Smart JSON serialization that handles various Python objects.
-        
-        Automatically converts:
-        - Pydantic BaseModel -> dict
-        - Dataclasses -> dict  
-        - Regular classes with __dict__ -> dict
-        - Other objects with .dict() method -> dict
-        - Regular dicts/lists/primitives -> unchanged
-        """
-        if json_data is None:
-            return None
-            
-        # Check for Pydantic BaseModel
-        if hasattr(json_data, 'model_dump'):
-            # Pydantic v2
-            return json_data.model_dump()
-        elif hasattr(json_data, 'dict'):
-            # Pydantic v1 or other objects with .dict() method
-            return json_data.dict()
-        
-        # Check for dataclass
-        elif hasattr(json_data, '__dataclass_fields__'):
-            import dataclasses
-            return dataclasses.asdict(json_data)
-        
-        # Check for regular class with __dict__ attribute
-        elif hasattr(json_data, '__dict__'):
-            return vars(json_data)
-        
-        # Return as-is for regular dicts, lists, primitives
-        return json_data
-    
     def _make_request(self, method: str, **decorator_kwargs) -> Callable[[AsyncCallable], AsyncCallable]:
         """
         Common request logic for all HTTP methods.
@@ -208,8 +185,8 @@ class FastHTTP:
                     # Prepare request parameters
                     request_kwargs = {
                         'params': kwargs.get('params', {}),
-                        'data': kwargs.get('data'),
-                        'json': self._serialize_json(kwargs.get('json')),
+                        'data': to_dict(kwargs.get('data')),
+                        'json': to_dict(kwargs.get('json')),
                         'headers': {**self.default_headers, **kwargs.get('headers', {})},
                         'cookies': kwargs.get('cookies'),
                         'auth': kwargs.get('auth', self.auth),

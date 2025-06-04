@@ -5,7 +5,8 @@ Built on top of aiohttp, FastHTTP provides a clean, decorator-based interface
 for making HTTP requests with automatic resource management.
 """
 
-from .applications import FastHTTP
+from fasthttp.applications import FastHTTP
+from fasthttp.serializers import to_dict
 
-__version__ = "0.1.0"
-__all__ = ["FastHTTP"]
+__version__ = "0.1.1"
+__all__ = ["FastHTTP", "to_dict"]

@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "fastaiohttp"
-version = "0.1.0"
+version = "0.1.1"
 description = "A fast and elegant HTTP client library with decorator-based request handling built on aiohttp"
 readme = "README.md"
 license = "MIT"
@@ -45,4 +45,4 @@ Repository = "https://github.com/2-seo/fasthttp"
 Issues = "https://github.com/2-seo/fasthttp/issues"
 
 [tool.hatch.build.targets.wheel]
-packages = ["fasthttp"] 
+packages = ["fasthttp"]
