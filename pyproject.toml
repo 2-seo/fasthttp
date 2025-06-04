@@ -1,9 +1,48 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [project]
-name = "fasthttp"
+name = "fastaiohttp"
 version = "0.1.0"
 description = "A fast and elegant HTTP client library with decorator-based request handling built on aiohttp"
 readme = "README.md"
-requires-python = ">=3.13"
+license = "MIT"
+requires-python = ">=3.8"
+authors = [
+    { name = "FastHTTP Team", email = "seohyun.develop@gmail.com" },
+]
+keywords = [
+    "http",
+    "client",
+    "async",
+    "aiohttp",
+    "requests",
+    "api",
+    "decorator"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Internet :: WWW/HTTP",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
 dependencies = [
-    "aiohttp>=3.12.7",
-] 
+    "aiohttp>=3.8.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/2-seo/fasthttp"
+Repository = "https://github.com/2-seo/fasthttp"
+Issues = "https://github.com/2-seo/fasthttp/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["fasthttp"] 
