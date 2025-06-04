@@ -1,47 +1,39 @@
+"""
+FastHTTP - A fast and elegant HTTP client library with decorator-based request handling.
+
+This module provides the main FastHTTP client class built on top of aiohttp,
+offering decorator-based request handling for clean and intuitive API design.
+"""
+
 import aiohttp
-import asyncio
 import logging
-import atexit
-import weakref
-from typing import Any, Callable, Dict, Optional, Union, TypeVar, Awaitable, Set
+from typing import Any, Callable, Dict, Optional, Union, TypeVar, Awaitable
 from functools import wraps
 
+from fasthttp.lifecycle import register_instance
+
 # Type variables for better type hints
-# AsyncCallable은 비동기 함수 타입을 나타내는 제네릭 타입 변수입니다.
-# bound=Callable[..., Awaitable[Any]]는 AsyncCallable이 async 함수 타입으로만 제한됨을 의미합니다.
-# 이를 통해 데코레이터 적용 후에도 원본 함수의 타입 정보가 보존됩니다.
+# AsyncCallable represents async function types with preserved signatures
 AsyncCallable = TypeVar('AsyncCallable', bound=Callable[..., Awaitable[Any]])
 
-# 전역 FastHTTP 인스턴스들을 추적하여 프로세스 종료 시 정리
-_active_instances: Set[weakref.ReferenceType] = set()
-_cleanup_registered = False
-
-def _cleanup_all_instances():
-    """프로세스 종료 시 모든 활성 FastHTTP 인스턴스를 정리"""
-    for instance_ref in list(_active_instances):
-        instance = instance_ref()
-        if instance is not None:
-            try:
-                # 이벤트 루프가 실행 중인지 확인
-                loop = asyncio.get_event_loop()
-                if loop.is_running():
-                    # 루프가 실행 중이면 태스크로 추가
-                    loop.create_task(instance._cleanup_sync())
-                else:
-                    # 루프가 없거나 중지되었으면 새 루프에서 실행
-                    asyncio.run(instance._cleanup_sync())
-            except:
-                # 에러가 발생해도 다른 인스턴스들은 계속 정리
-                pass
-
-def _register_global_cleanup():
-    """전역 cleanup 핸들러를 한 번만 등록"""
-    global _cleanup_registered
-    if not _cleanup_registered:
-        atexit.register(_cleanup_all_instances)
-        _cleanup_registered = True
 
 class FastHTTP:
+    """
+    A fast and elegant HTTP client with decorator-based request handling.
+    
+    FastHTTP provides a clean, decorator-based interface for making HTTP requests,
+    built on top of aiohttp for high performance and async support.
+    
+    Example:
+        >>> http = FastHTTP(base_url="https://api.example.com")
+        >>> 
+        >>> @http.get("/users/{user_id}")
+        >>> async def get_user(response, user_id: int):
+        >>>     return await response.json()
+        >>> 
+        >>> user = await get_user(user_id=123)
+    """
+    
     def __init__(
         self, 
         base_url: Optional[str] = None,
@@ -64,7 +56,7 @@ class FastHTTP:
             auth: Basic authentication
             cookies: Default cookies
             debug: Enable debug logging
-            auto_cleanup: Enable automatic resource cleanup on process exit (default: True)
+            auto_cleanup: Enable automatic resource cleanup on process exit
         """
         self.base_url = base_url
         self.default_headers = headers or {}
@@ -92,56 +84,13 @@ class FastHTTP:
         # Session will be created lazily
         self._session: Optional[aiohttp.ClientSession] = None
         
-        # 자동 cleanup 설정
+        # Register for automatic cleanup if enabled
         if auto_cleanup:
-            # 전역 cleanup 핸들러 등록
-            _register_global_cleanup()
-            
-            # 이 인스턴스를 전역 추적 목록에 추가
-            _active_instances.add(weakref.ref(self, self._remove_from_tracking))
-            
-            # weakref.finalize를 사용하여 객체가 GC될 때도 정리
-            self._finalizer = weakref.finalize(
-                self, 
-                self._cleanup_finalizer, 
-                weakref.ref(self._get_session), 
-                weakref.ref(lambda: self._connector)
-            )
-    
-    @staticmethod
-    def _remove_from_tracking(instance_ref):
-        """인스턴스가 GC될 때 추적 목록에서 제거"""
-        _active_instances.discard(instance_ref)
-    
-    @staticmethod
-    def _cleanup_finalizer(session_ref, connector_ref):
-        """finalizer에서 사용할 cleanup 함수 (동기적)"""
-        try:
-            session_func = session_ref()
-            if session_func:
-                session = session_func()
-                if session and not session.closed:
-                    try:
-                        # 동기적으로 세션 종료 시도
-                        session._connector.close()
-                    except:
-                        pass
-                        
-            connector_func = connector_ref()
-            if connector_func:
-                connector = connector_func()
-                if connector and not connector.closed:
-                    try:
-                        connector.close()
-                    except:
-                        pass
-        except:
-            # finalizer에서는 예외를 무시
-            pass
+            register_instance(self)
     
     @property
     def connector(self) -> aiohttp.BaseConnector:
-        """Lazy-create connector when first accessed"""
+        """Lazy-create connector when first accessed."""
         if self._connector is None:
             if self._custom_connector is not None:
                 self._connector = self._custom_connector
@@ -156,16 +105,16 @@ class FastHTTP:
         return self._connector
     
     async def __aenter__(self) -> 'FastHTTP':
-        """Async context manager entry"""
+        """Async context manager entry."""
         await self._get_session()
         return self
     
     async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
-        """Async context manager exit"""
+        """Async context manager exit."""
         await self.close()
     
     async def _get_session(self) -> aiohttp.ClientSession:
-        """Get or create session with lazy initialization"""
+        """Get or create session with lazy initialization."""
         if self._session is None or self._session.closed:
             self._session = aiohttp.ClientSession(
                 connector=self.connector,  # This will create connector if needed
@@ -177,7 +126,7 @@ class FastHTTP:
         return self._session
     
     async def _cleanup_sync(self) -> None:
-        """내부 cleanup 메서드 (중복 호출 방지)"""
+        """Internal cleanup method (prevents duplicate calls)."""
         if self._closed:
             return
             
@@ -189,15 +138,15 @@ class FastHTTP:
             await self._connector.close()
     
     async def close(self) -> None:
-        """Close the session and cleanup resources"""
+        """Close the session and cleanup resources."""
         await self._cleanup_sync()
         
-        # finalizer가 설정되어 있으면 비활성화 (이미 수동으로 정리했으므로)
+        # Disable finalizer if set (already cleaned up manually)
         if hasattr(self, '_finalizer'):
             self._finalizer.detach()
     
     def _build_url(self, url: str, **kwargs) -> str:
-        """Build complete URL from base_url and format with kwargs"""
+        """Build complete URL from base_url and format with kwargs."""
         if self.base_url and not url.startswith(('http://', 'https://')):
             url = f"{self.base_url.rstrip('/')}/{url.lstrip('/')}"
         return url.format(**kwargs)
@@ -206,10 +155,8 @@ class FastHTTP:
         """
         Common request logic for all HTTP methods.
         
-        AsyncCallable 타입 사용 설명:
-        - AsyncCallable은 데코레이터가 적용되는 비동기 함수의 타입을 나타냅니다
-        - Callable[[AsyncCallable], AsyncCallable]는 "AsyncCallable 타입의 함수를 받아서 AsyncCallable 타입의 함수를 반환"한다는 의미입니다
-        - 이를 통해 데코레이터 적용 후에도 원본 함수의 시그니처가 IDE에서 그대로 보입니다
+        Returns a decorator that wraps async functions to handle HTTP requests.
+        The decorator preserves the original function's type signature.
         """
         def decorator(func: AsyncCallable) -> AsyncCallable:
             @wraps(func)
