@@ -39,12 +39,12 @@ from fasthttp import FastHTTP
 http = FastHTTP(base_url="https://jsonplaceholder.typicode.com")
 
 @http.get("/posts/{post_id}")
-async def get_post(response, post_id: int):
+async def get_post(response, post_id):
     """Fetch a single post by ID."""
     return await response.json()
 
 @http.post("/posts")
-async def create_post(response, title: str, body: str, userId: int):
+async def create_post(response, json=None):
     """Create a new post."""
     return await response.json()
 
@@ -62,7 +62,7 @@ async def main():
         }
     )
     print(f"Created post with ID: {new_post['id']}")
-    
+
 if __name__ == "__main__":
     asyncio.run(main())
 ```
@@ -96,23 +96,23 @@ async def list_users(response):
     return await response.json()
 
 @http.post("/users")
-async def create_user(response, **user_data):
+async def create_user(response, json=None):
     return await response.json()
 
 @http.put("/users/{user_id}")
-async def update_user(response, user_id: int, **user_data):
+async def update_user(response, user_id, json=None):
     return await response.json()
 
 @http.patch("/users/{user_id}")
-async def partial_update_user(response, user_id: int, **changes):
+async def partial_update_user(response, user_id, json=None):
     return await response.json()
 
 @http.delete("/users/{user_id}")
-async def delete_user(response, user_id: int):
+async def delete_user(response, user_id):
     return response.status == 204
 
 @http.head("/users/{user_id}")
-async def user_exists(response, user_id: int):
+async def user_exists(response, user_id):
     return response.status == 200
 
 @http.options("/users")
@@ -126,7 +126,7 @@ Use URL templates with dynamic parameters:
 
 ```python
 @http.get("/users/{user_id}/posts/{post_id}")
-async def get_user_post(response, user_id: int, post_id: int):
+async def get_user_post(response, user_id, post_id):
     return await response.json()
 
 # Usage
@@ -138,32 +138,64 @@ post = await get_user_post(user_id=123, post_id=456)
 Pass various request parameters:
 
 ```python
+# Query parameters example
 @http.get("/search")
-async def search(response, query: str, page: int = 1):
+async def search(response, params=None):
+    """Search with query parameters"""
     return await response.json()
 
 # Usage with query parameters
 results = await search(
-    query="python",
-    params={"page": 1, "limit": 10}
+    params={"query": "python", "page": 1, "limit": 10}
 )
 
-# Usage with JSON body
+# JSON body example
 @http.post("/users")
-async def create_user(response):
+async def create_user(response, json=None):
+    """Create user with JSON data"""
     return await response.json()
 
+# Usage with JSON body
 user = await create_user(
     json={"name": "John Doe", "email": "john@example.com"}
 )
 
-# Usage with form data
+# Form data example
 @http.post("/upload")
-async def upload_file(response):
+async def upload_file(response, data=None):
+    """Upload file with form data"""
     return await response.json()
 
+# Usage with form data
 result = await upload_file(
     data={"file": open("document.pdf", "rb")}
+)
+
+# Multiple parameters with URL templating
+@http.get("/users/{user_id}/posts")
+async def get_user_posts(response, user_id, params=None, headers=None):
+    """Get user posts with query parameters and custom headers"""
+    return await response.json()
+
+# Usage with URL parameter, query parameters, and headers
+posts = await get_user_posts(
+    user_id=123,
+    params={"page": 1, "limit": 5},
+    headers={"Authorization": "Bearer token123"}
+)
+
+# Advanced example with multiple HTTP options
+@http.post("/api/data")
+async def send_data(response, json=None, params=None, headers=None, timeout=None):
+    """Send data with multiple request options"""
+    return await response.json()
+
+# Usage with multiple options
+result = await send_data(
+    json={"data": "example"},
+    params={"version": "v1"},
+    headers={"Content-Type": "application/json"},
+    timeout=60
 )
 ```
 
@@ -173,7 +205,7 @@ result = await upload_file(
 import aiohttp
 
 @http.get("/users/{user_id}")
-async def get_user(response, user_id: int):
+async def get_user(response, user_id):
     if response.status == 404:
         return None
     response.raise_for_status()  # Raise exception for HTTP errors
@@ -181,7 +213,7 @@ async def get_user(response, user_id: int):
 
 # Or use raise_for_status parameter
 @http.get("/users/{user_id}")
-async def get_user_safe(response, user_id: int):
+async def get_user_safe(response, user_id, raise_for_status=None):
     return await response.json()
 
 try:
@@ -192,9 +224,22 @@ except aiohttp.ClientResponseError as e:
 
 ### Context Manager
 
-Use FastHTTP as an async context manager for automatic resource cleanup:
+FastHTTP automatically cleans up resources when your program exits (enabled by default), but you can also use it as an async context manager for explicit control:
 
 ```python
+# Option 1: Automatic cleanup (default behavior)
+http = FastHTTP(base_url="https://api.example.com")
+
+@http.get("/data")
+async def get_data(response):
+    return await response.json()
+
+async def main():
+    data = await get_data()
+    print(data)
+    # Resources are automatically cleaned up when program exits
+
+# Option 2: Explicit cleanup with context manager
 async def main():
     async with FastHTTP(base_url="https://api.example.com") as http:
         @http.get("/data")
@@ -203,7 +248,21 @@ async def main():
         
         data = await get_data()
         print(data)
-    # Resources are automatically cleaned up here
+    # Resources are explicitly cleaned up here
+
+# Option 3: Manual cleanup (if auto_cleanup=False)
+async def main():
+    http = FastHTTP(base_url="https://api.example.com", auto_cleanup=False)
+    
+    @http.get("/data")
+    async def get_data(response):
+        return await response.json()
+    
+    try:
+        data = await get_data()
+        print(data)
+    finally:
+        await http.close()  # Manual cleanup required
 ```
 
 ### Custom Connectors
@@ -277,7 +336,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 📞 Support
 
 - 📫 Issues: [GitHub Issues](https://github.com/2-seo/fasthttp/issues)
-- 💬 Discussions: [GitHub Discussions](https://github.com/2-seo/fasthttp/discussions)
+- ✉️ Email: seohyun.develop@gmail.com
 
 
 ---
