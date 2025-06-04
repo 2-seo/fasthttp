@@ -6,6 +6,7 @@ converting them to JSON-serializable dictionaries for HTTP requests.
 """
 
 import io
+from datetime import date, datetime, time
 from typing import Any, Dict, List, Union, TypeAlias
 
 # Type aliases for better readability and type safety
@@ -37,6 +38,7 @@ def to_dict(data: SerializableInput) -> JsonSerializable:
     - Lists/tuples -> list (with nested objects serialized)
     - Dictionaries -> dict (with nested objects serialized)
     - File objects (IOBase) -> unchanged (for file uploads)
+    - Date/DateTime/Time objects -> ISO format strings
     - Regular primitives -> unchanged
     
     This function is used for both 'json' and 'data' parameters to ensure
@@ -51,6 +53,7 @@ def to_dict(data: SerializableInput) -> JsonSerializable:
     Examples:
         >>> from dataclasses import dataclass
         >>> from pydantic import BaseModel
+        >>> from datetime import date, datetime
         
         >>> @dataclass
         ... class User:
@@ -64,10 +67,11 @@ def to_dict(data: SerializableInput) -> JsonSerializable:
         >>> class PostRequest(BaseModel):
         ...     title: str
         ...     content: str
+        ...     created_at: datetime
         
-        >>> post = PostRequest(title="Hello", content="World")
-        >>> to_dict(post)
-        {'title': 'Hello', 'content': 'World'}
+        >>> post = PostRequest(title="Hello", content="World", created_at=datetime.now())
+        >>> result = to_dict(post)
+        >>> # result['created_at'] will be ISO format string
     """
     if data is None:
         return None
@@ -75,20 +79,34 @@ def to_dict(data: SerializableInput) -> JsonSerializable:
     # Check for file objects first (IOBase subclasses) - don't serialize these
     if isinstance(data, io.IOBase):
         return data
+    
+    # Handle date/time objects - convert to ISO format strings
+    if isinstance(data, datetime):
+        return data.isoformat()
+    elif isinstance(data, date):
+        return data.isoformat()
+    elif isinstance(data, time):
+        return data.isoformat()
         
     # Check for Pydantic BaseModel
     if hasattr(data, 'model_dump'):
         # Pydantic v2 - handles nested models automatically
-        return data.model_dump()
+        result = data.model_dump()
+        # Recursively process the result to handle date/time objects
+        return to_dict(result)
     elif hasattr(data, 'dict'):
         # Pydantic v1 or other objects with .dict() method
-        return data.dict()
+        result = data.dict()
+        # Recursively process the result to handle date/time objects
+        return to_dict(result)
     
     # Check for dataclass
     elif hasattr(data, '__dataclass_fields__'):
         import dataclasses
         # dataclasses.asdict() handles nested dataclasses automatically
-        return dataclasses.asdict(data)
+        result = dataclasses.asdict(data)
+        # Recursively process the result to handle date/time objects
+        return to_dict(result)
     
     # Check for regular class with __dict__ attribute
     elif hasattr(data, '__dict__'):
