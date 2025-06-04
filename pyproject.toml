@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "fastaiohttp"
-version = "0.1.1"
+version = "0.1.11"
 description = "A fast and elegant HTTP client library with decorator-based request handling built on aiohttp"
 readme = "README.md"
 license = "MIT"
