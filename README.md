@@ -1,6 +1,7 @@
 # FastHTTP
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![PyPI version](https://img.shields.io/pypi/v/fastaiohttp)](https://pypi.org/project/fastaiohttp/)
 
 A fast and elegant HTTP client library with decorator-based request handling, built on top of aiohttp.
 
